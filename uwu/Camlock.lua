@@ -1,113 +1,63 @@
+local aimbotEnabled = false
+local lockedTarget = nil
 
-local CoreGui = game:GetService("StarterGui")
-
-CoreGui:SetCore("SendNotification", {
-	Title = "Camlock [V1.0.0]";
-	Text = "Keybind: Z";
-	Duration = 5;
-})
-
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-
-local isMouseLocked = false
-local targetPlayer = nil
-
--- Variable to track the visibility state of the frame
-local frameVisible = true
-
--- Function to toggle the visibility of the frame
-local function toggleFrameVisibility()
-	frameVisible = not frameVisible
-	for _, player in ipairs(Players:GetPlayers()) do
-		local highlight = player.Character:FindFirstChild("HighlightBillboard")
-		if highlight then
-			highlight.Frame.Visible = frameVisible
-		end
-	end
-end
-
--- Function to lock the mouse to a player's head
-local function lockMouseToPlayerHead(player)
-	targetPlayer = player
-	isMouseLocked = true
-	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-end
-
--- Function to unlock the mouse
-local function unlockMouse()
-	targetPlayer = nil
-	isMouseLocked = false
-	UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-end
-
--- Function to find the nearest player's head to the mouse position
-local function findNearestPlayerHead(mousePosition)
-	local nearestPlayer = nil
-	local minDistance = math.huge
-	local camera = workspace.CurrentCamera
-
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer and player.Character then
-			local character = player.Character
-			local head = character:FindFirstChild("Head")
-
-			if head then
-				local headPosition = head.Position
-				local headScreenPosition = camera:WorldToViewportPoint(headPosition)
-
-				if headScreenPosition.Z > 0 then -- Check if head is in front of the camera
-					local distance = (Vector2.new(headScreenPosition.X, headScreenPosition.Y) - mousePosition).magnitude
-
-					if distance < minDistance then
-						minDistance = distance
-						nearestPlayer = player
-					end
-				end
-			end
-		end
-	end
-
-	return nearestPlayer
-end
-
--- Function to continuously update the camera position and rotation to match the player's movement
-local function updateCamera()
-	if isMouseLocked and targetPlayer then
-		local character = targetPlayer.Character
-		if character and character:FindFirstChild("Head") then
-			local head = character.Head
-			if head then
-				local camera = workspace.CurrentCamera
-				local currentCameraCFrame = camera.CFrame
-				local newCameraCFrame = CFrame.new(
-					currentCameraCFrame.Position,
-					head.Position
-				)
-				camera.CFrame = newCameraCFrame
-			else
-				unlockMouse() -- Unlock mouse if the player's head is missing
-			end
-		end
-	end
-end
-
--- Bind the lockMouseToPlayerHead function to the 'G' key press
-UserInputService.InputBegan:Connect(function(input)
-	if input.KeyCode == Enum.KeyCode.Z then
-		if not isMouseLocked then
-			local mouse = LocalPlayer:GetMouse()
-			local mousePosition = Vector2.new(mouse.X, mouse.Y)
-			local nearestPlayer = findNearestPlayerHead(mousePosition)
-			if nearestPlayer then
-				lockMouseToPlayerHead(nearestPlayer)
-			end
-		else
-			unlockMouse()
-		end
-	end
+game:GetService("UserInputService").InputBegan:Connect(function(input, isProcessed)
+    if not isProcessed and input.KeyCode == Enum.KeyCode.Z then
+        aimbotEnabled = not aimbotEnabled
+        if aimbotEnabled and lockedTarget then
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Aimbot Locked Onto:";
+                Text = lockedTarget.Name;
+                Duration = 5;
+            })
+        end
+    end
 end)
 
--- Update the camera position and rotation every frame
-game:GetService("RunService").RenderStepped:Connect(updateCamera)
+game:GetService("RunService").RenderStepped:Connect(function()
+    if aimbotEnabled then
+        local mouse = game.Players.LocalPlayer:GetMouse()
+        local cursorPosition = Vector2.new(mouse.X, mouse.Y)
+        
+        if not lockedTarget then
+            local targetPlayer = nil
+            local shortestDistance = math.huge
+
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer then
+                    local character = player.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Head") then
+                        local rootPosition = character.HumanoidRootPart.Position
+                        local screenPosition, onScreen = game.Workspace.CurrentCamera:WorldToScreenPoint(rootPosition)
+
+                        if onScreen then
+                            local playerCursorPosition = Vector2.new(screenPosition.X, screenPosition.Y)
+                            local distance = (cursorPosition - playerCursorPosition).magnitude
+
+                            if distance < shortestDistance then
+                                targetPlayer = player
+                                shortestDistance = distance
+                            end
+                        end
+                    end
+                end
+            end
+
+            lockedTarget = targetPlayer
+            if aimbotEnabled and lockedTarget then
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "Locked Onto";
+                    Text = lockedTarget.Name;
+                    Duration = 5;
+                })
+            end
+        end
+
+        if lockedTarget then
+            local headPosition = lockedTarget.Character.Head.Position
+            game.Workspace.CurrentCamera.CFrame = CFrame.new(game.Workspace.CurrentCamera.CFrame.Position, headPosition)
+        end
+    else
+        lockedTarget = nil
+    end
+end)
