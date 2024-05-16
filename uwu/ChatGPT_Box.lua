@@ -5,7 +5,6 @@ CoreGui:SetCore("SendNotification", {
 	Duration = 5;
 })
 
--- Function to create a box outline around a player's character
 local function createBoxOutline(player)
     local character = player.Character
     if character then
