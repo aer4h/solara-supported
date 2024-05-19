@@ -2,11 +2,11 @@ local aimbotEnabled = false
 local lockedTarget = nil
 
 game:GetService("UserInputService").InputBegan:Connect(function(input, isProcessed)
-    if not isProcessed and input.KeyCode == Enum.KeyCode.Z then
+    if not isProcessed and input.KeyCode == Enum.KeyCode.Q then
         aimbotEnabled = not aimbotEnabled
         if aimbotEnabled and lockedTarget then
             game.StarterGui:SetCore("SendNotification", {
-                Title = "Aimbot Locked Onto:";
+                Title = "aimbot heck omegad";
                 Text = lockedTarget.Name;
                 Duration = 5;
             })
@@ -46,7 +46,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
             lockedTarget = targetPlayer
             if aimbotEnabled and lockedTarget then
                 game.StarterGui:SetCore("SendNotification", {
-                    Title = "Locked Onto";
+                    Title = "aimbot heck omegad";
                     Text = lockedTarget.Name;
                     Duration = 5;
                 })
@@ -58,6 +58,6 @@ game:GetService("RunService").RenderStepped:Connect(function()
             game.Workspace.CurrentCamera.CFrame = CFrame.new(game.Workspace.CurrentCamera.CFrame.Position, headPosition)
         end
     else
-        lockedTarget = nil
+        lockedTarget = nil -- Reset locked target when aimbot is disabled
     end
 end)
